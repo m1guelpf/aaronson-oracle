@@ -1,9 +1,19 @@
+
+
 [package]
-name = "free-will-cli"
-version = "0.1.0"
+license = "MIT"
 edition = "2024"
+version = "0.1.0"
+readme = "README.md"
+name = "aaronson-oracle"
+authors = ["Miguel Piedrafita <rust@miguel.build>"]
+categories = ["algorithms", "science", "simulation"]
+keywords = ["predictor", "ngram", "binary", "choice", "oracle"]
+repository = "https://github.com/miguel-piedrafita/aaronson-oracle"
+description = "A simple ngram-based predictor for a binary choice."
 
 [dependencies]
-itertools = "0.14.0"
 rand = "0.9.0"
+
+[dev-dependencies]
 termion = "4.0.4"

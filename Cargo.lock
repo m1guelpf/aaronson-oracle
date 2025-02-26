@@ -3,6 +3,14 @@
 version = 4
 
 [[package]]
+name = "aaronson-oracle"
+version = "0.1.0"
+dependencies = [
+ "rand",
+ "termion",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -21,21 +29,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "either"
-version = "1.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7914353092ddf589ad78f25c5c1c21b7f80b0ff8621e7c814c3485b5306da9d"
-
-[[package]]
-name = "free-will-cli"
-version = "0.1.0"
-dependencies = [
- "itertools",
- "rand",
- "termion",
-]
-
-[[package]]
 name = "getrandom"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -45,15 +38,6 @@ dependencies = [
  "libc",
  "wasi",
  "windows-targets",
-]
-
-[[package]]
-name = "itertools"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b192c782037fadd9cfa75548310488aabdbf3d2da73885b31bd0abd03351285"
-dependencies = [
- "either",
 ]
 
 [[package]]

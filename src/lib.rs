@@ -1,83 +1,115 @@
-use itertools::Itertools;
-use rand::seq::IndexedRandom;
-use std::collections::{HashMap, VecDeque};
+#![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 
-pub struct Predictor {
-    n: usize,
-    history: VecDeque<char>,
-    pub total_predictions: usize,
-    pub correct_predictions: usize,
-    grams: HashMap<String, Prediction>,
+use std::cmp::Ordering;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// An abstract representation of two possible actions.
+pub enum Choice {
+    Left,
+    Right,
 }
 
-impl Predictor {
-    pub fn new(n: usize) -> Self {
-        Self {
-            n,
-            total_predictions: 0,
-            correct_predictions: 0,
-            history: VecDeque::with_capacity(n),
-            grams: Self::generate_grams(n, &['f', 'j']),
+impl Choice {
+    const fn to_bit(self) -> u32 {
+        match self {
+            Self::Left => 0,
+            Self::Right => 1,
         }
     }
 
-    pub fn predict(&mut self, answer: char) -> Option<char> {
-        if self.history.len() < self.n {
-            self.history.push_back(answer);
+    /// Represent the choice as one of two possible values.
+    pub fn display<T>(self, choices: [T; 2]) -> T {
+        let [left, right] = choices;
+
+        match self {
+            Self::Left => left,
+            Self::Right => right,
+        }
+    }
+}
+
+impl From<bool> for Choice {
+    fn from(b: bool) -> Self {
+        if b { Self::Right } else { Self::Left }
+    }
+}
+
+pub struct Predictor {
+    /// The size of the n-grams used by the predictor.
+    n: usize,
+    /// The current state of the predictor.
+    state: u32,
+    /// The number of bits in the state. It will fall out of sync once it reaches `n`.
+    count: usize,
+    /// A vector of predictions, indexed by the state.
+    grams: Vec<Prediction>,
+    /// The total number of predictions made.
+    pub total_predictions: usize,
+    /// The number of correct predictions made.
+    pub correct_predictions: usize,
+}
+
+impl Predictor {
+    /// Create a new predictor with the given n-gram size.
+    ///
+    /// # Arguments
+    /// * `n` - The size of the n-grams used by the predictor.
+    #[must_use]
+    pub fn new(n: usize) -> Self {
+        Self {
+            n,
+            state: 0,
+            count: 0,
+            total_predictions: 0,
+            correct_predictions: 0,
+            grams: vec![Prediction::default(); 1 << n],
+        }
+    }
+
+    /// Predict the next choice, and register the correct choice.
+    pub fn predict(&mut self, choice: Choice) -> Option<Choice> {
+        if self.count < self.n {
+            self.state = (self.state << 1) | choice.to_bit();
+            self.count += 1;
             return None;
         }
 
-        let gram = self
-            .grams
-            .get_mut(&self.history.iter().collect::<String>())
-            .expect("gram should exist");
+        let prediction = self.grams[self.state as usize].predict();
+        self.grams[self.state as usize].register(choice);
 
-        let prediction = gram.predict();
-        gram.register(answer);
-
-        self.history.pop_front();
-        self.history.push_back(answer);
+        self.state = ((self.state << 1) | choice.to_bit()) & ((1 << self.n) - 1);
 
         self.total_predictions += 1;
-        if prediction == answer {
+        if prediction == choice {
             self.correct_predictions += 1;
         }
 
         Some(prediction)
     }
-
-    fn generate_grams(size: usize, chars: &[char]) -> HashMap<String, Prediction> {
-        let iter = std::iter::repeat_n(chars.iter(), size);
-
-        iter.multi_cartesian_product()
-            .map(|chars| (chars.iter().join(""), Prediction::default()))
-            .collect::<HashMap<_, _>>()
-    }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, Default)]
+/// A prediction for a given n-gram.
 struct Prediction {
-    f: usize,
-    j: usize,
+    left: usize,
+    right: usize,
 }
 
 impl Prediction {
-    fn predict(&self) -> char {
-        if self.f > self.j {
-            return 'f';
+    /// Predict the next choice based on the current n-gram.
+    fn predict(&self) -> Choice {
+        match self.left.cmp(&self.right) {
+            Ordering::Less => Choice::Right,
+            Ordering::Greater => Choice::Left,
+            Ordering::Equal => Choice::from(rand::random::<bool>()),
         }
-        if self.j > self.f {
-            return 'j';
-        }
-
-        *['f', 'j'].choose(&mut rand::rng()).unwrap()
     }
 
-    fn register(&mut self, c: char) {
-        match c {
-            'f' => self.f += 1,
-            'j' => self.j += 1,
-            _ => panic!("Invalid character"),
+    /// Register the given choice.
+    const fn register(&mut self, choice: Choice) {
+        match choice {
+            Choice::Left => self.left += 1,
+            Choice::Right => self.right += 1,
         }
     }
 }
